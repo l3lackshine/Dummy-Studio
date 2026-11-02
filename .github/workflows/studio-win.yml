@@ -11,6 +11,15 @@ jobs:
         working-directory: studio
     steps:
       - uses: actions/checkout@v4
+
+      # โปรเจกต์ Dummy Online จริง (ใช้เป็นข้อมูลทดสอบ) — ลงในโฟลเดอร์ย่อย ไม่ปนกับ repo ของสตูดิโอ
+      - name: Checkout Dummy-Online
+        uses: actions/checkout@v4
+        with:
+          repository: YOUR_USER/Dummy-Online        # <-- แก้เป็น owner/repo จริง
+          token: ${{ secrets.DUMMY_ONLINE_TOKEN }}  # จำเป็นถ้า repo เป็น private (ลบบรรทัดนี้ได้ถ้า public)
+          path: dummy-online
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -18,7 +27,7 @@ jobs:
       - name: ทดสอบแกนข้อมูลกับโปรเจกต์จริง
         run: npm test
         env:
-          DUMMY_ROOT: ${{ github.workspace }}
+          DUMMY_ROOT: ${{ github.workspace }}/dummy-online
       - run: npm run dist
       - uses: actions/upload-artifact@v4
         with:
