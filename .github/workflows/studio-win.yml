@@ -1,0 +1,26 @@
+name: Build Dummy Studio (Windows)
+on:
+  workflow_dispatch:
+  push:
+    paths: ['studio/**']
+jobs:
+  win:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: studio
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install
+      - name: ทดสอบแกนข้อมูลกับโปรเจกต์จริง
+        run: npm test
+        env:
+          DUMMY_ROOT: ${{ github.workspace }}
+      - run: npm run dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DummyStudio-win
+          path: studio/dist/*.exe
