@@ -1,0 +1,24 @@
+{
+  "name": "dummy-studio",
+  "productName": "Dummy Studio",
+  "version": "0.1.0",
+  "description": "เครื่องมือจัดการข้อมูลเกม Dummy Online (ตัวละคร ร้านค้า ตู้กาชา) แบบหน้าตา Godot",
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "test": "node test/test-project.js",
+    "dist": "electron-builder --win --publish never"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.dummyonline.studio",
+    "productName": "Dummy Studio",
+    "files": ["main.js", "preload.js", "lib/**", "renderer/**", "package.json"],
+    "win": { "target": ["nsis", "portable"] },
+    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true }
+  }
+}
