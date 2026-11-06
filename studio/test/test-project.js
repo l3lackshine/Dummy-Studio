@@ -25,12 +25,12 @@ assert.throws(() => P.createCharacter(tmp, 'Bad Id', 'x'), /id ต้องเ�
 const c = P.createCharacter(tmp, 'mina-01', 'มินะ'); assert(c.serverIdAdded); assert(P.serverIds(tmp, 'CHARS').includes('mina-01')); ok('สร้างตัวละคร + เพิ่ม id ใน CHARS');
 let pr = P.validate(tmp).filter(p => /mina-01/.test(p.where)); assert(pr.some(p => p.level === 'error' && /รูป/.test(p.msg)) && pr.some(p => /สกิล/.test(p.msg))); ok('เตือนว่ายังไม่มีรูป/สกิล');
 const png = path.join(tmp, 'x.png'); fs.writeFileSync(png, Buffer.from('89504e470d0a1a0a', 'hex'));
-const im = P.importImage(tmp, c.key, png); assert(fs.existsSync(path.join(tmp, im.dir, im.name))); assert(im.dir.startsWith('assets-src/Character/')); ok('นำเข้ารูปตัวละครไป ' + im.dir);
+const im = P.importImage(tmp, c.key, png); assert(fs.existsSync(path.join(tmp, im.dir, im.name))); assert(im.dir.startsWith('assets-src/Assets/Character/')); ok('นำเข้ารูปตัวละครไป ' + im.dir);
 assert(!P.validate(tmp).some(p => /mina-01/.test(p.where) && p.level === 'error')); ok('นำเข้ารูปแล้วข้อผิดพลาดหาย');
 const b = P.createBanner(tmp, 'test-up', 'ทดสอบ'); const bd = P.loadResources(tmp).find(r => r.key === b.key).data; bd.rateUp.items = ['ไม่มีตัวนี้']; bd.rarityWeights = { legendary: 0, epic: 0, rare: 0, common: 0 }; bd.ticket = 'nope'; P.saveResource(tmp, b.key, bd);
 pr = P.validate(tmp).filter(p => /test-up/.test(p.where)); assert(pr.some(p => /rateUp/.test(p.msg)) && pr.some(p => /เป็น 0/.test(p.msg)) && pr.some(p => /ticket/.test(p.msg))); ok('ตรวจตู้กาชาผิด (rateUp/น้ำหนัก/ตั๋ว) ได้');
 const bg = P.createItem(tmp, 'Background', 'new-bg', 'พื้นใหม่'); assert(P.serverIds(tmp, 'BGS').includes('new-bg')); ok('สร้างพื้นหลัง + เพิ่ม id ใน BGS');
-assert.throws(() => P.writeText(tmp, 'client/public/Shop/Shopsetting.config', '{พัง'), /JSON/i); ok('ไม่ยอมเซฟ JSON พัง');
+assert.throws(() => P.writeText(tmp, 'client/public/Assets/Shop/Shopsetting.config', '{พัง'), /JSON/i); ok('ไม่ยอมเซฟ JSON พัง');
 assert(P.listDir(tmp, '').some(x => x.name === 'client' && x.dir)); assert(!P.listDir(tmp, '').some(x => x.name === 'node_modules')); ok('FileSystem listDir');
 // สคริปต์เดิมของโปรเจกต์ยังตรวจผ่านหลังสตูดิโอแก้ไข
 const { execFileSync } = require('child_process');

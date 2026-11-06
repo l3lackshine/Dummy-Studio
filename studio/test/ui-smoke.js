@@ -7,7 +7,7 @@ const { chromium } = require(process.env.PLAYWRIGHT_PATH || 'playwright');
 const src = process.argv[2], shots = process.argv[3] || path.join(os.tmpdir(), 'studio-shots'); if (!src) { console.log('ระบุโฟลเดอร์โปรเจกต์'); process.exit(0); }
 fs.mkdirSync(shots, { recursive: true });
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'studio-ui-')); fs.cpSync(src, tmp, { recursive: true, filter: s => !/node_modules|\.git$/.test(s) });
-const png = path.join(tmp, 'pick.png'); fs.writeFileSync(png, fs.readFileSync(path.join(tmp, 'assets-src/Character/boy/Character.webp')));
+const png = path.join(tmp, 'pick.png'); fs.writeFileSync(png, fs.readFileSync(path.join(tmp, 'assets-src/Assets/Character/boy/Character.webp')));
 (async () => {
   const browser = await chromium.launch({ executablePath: process.env.CHROME_PATH, args: ['--allow-file-access-from-files'] });
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } }); const errors = [];
@@ -29,15 +29,15 @@ const png = path.join(tmp, 'pick.png'); fs.writeFileSync(png, fs.readFileSync(pa
   // แก้ค่า → dirty → บันทึก
   const price = page.locator('.insp .row', { hasText: /^price/ }).locator('input'); await price.fill('3500');
   ok(await page.locator('.tab .dot').count() === 1, 'แก้แล้วแท็บมีจุด ●'); await page.keyboard.press('Control+s'); await page.waitForTimeout(500);
-  ok(JSON.parse(fs.readFileSync(path.join(tmp, 'client/public/Character/sakuya-ssr/Character.config'), 'utf8')).price === 3500, 'Ctrl+S เขียนไฟล์จริง');
+  ok(JSON.parse(fs.readFileSync(path.join(tmp, 'client/public/Assets/Character/sakuya-ssr/Character.config'), 'utf8')).price === 3500, 'Ctrl+S เขียนไฟล์จริง');
   // ตู้กาชา
   await page.getByRole('button', { name: /ร้านค้า/ }).click(); await page.locator('.tn', { hasText: 'ราชินีไพ่' }).first().click(); await page.waitForSelector('.rates'); await page.waitForTimeout(300);
   ok((await page.locator('.rates').innerText()).includes('%'), 'ตารางเรตกาชาแสดง'); await page.screenshot({ path: shots + '/3-banner.png' });
   // สร้างตัวละครใหม่ผ่านโมดอล → ปัญหาแสดง → นำเข้ารูป
   await page.getByRole('button', { name: /ตัวละคร$/ }).first().click();
   await page.getByText('Data', { exact: true }).click(); await page.getByText('ตัวละครใหม่…').click(); const inp = page.locator('.modal input'); await inp.nth(0).fill('mina-01'); await inp.nth(1).fill('มินะ'); await page.getByRole('button', { name: 'ตกลง' }).click(); await page.waitForTimeout(600);
-  ok(fs.existsSync(path.join(tmp, 'client/public/Character/mina-01/Character.config')), 'สร้างตัวละครใหม่ได้'); ok(await page.locator('.ihead + div .lvl-err').count() >= 1, 'Inspector เตือนข้อผิดพลาดของตัวละครใหม่');
-  await page.getByRole('button', { name: /นำเข้ารูป/ }).click(); await page.waitForTimeout(700); ok(fs.existsSync(path.join(tmp, 'assets-src/Character/mina-01/Character.png')), 'นำเข้ารูปแล้วไฟล์อยู่ assets-src'); await page.screenshot({ path: shots + '/4-new-char.png' });
+  ok(fs.existsSync(path.join(tmp, 'client/public/Assets/Character/mina-01/Character.config')), 'สร้างตัวละครใหม่ได้'); ok(await page.locator('.ihead + div .lvl-err').count() >= 1, 'Inspector เตือนข้อผิดพลาดของตัวละครใหม่');
+  await page.getByRole('button', { name: /นำเข้ารูป/ }).click(); await page.waitForTimeout(700); ok(fs.existsSync(path.join(tmp, 'assets-src/Assets/Character/mina-01/Character.png')), 'นำเข้ารูปแล้วไฟล์อยู่ assets-src'); await page.screenshot({ path: shots + '/4-new-char.png' });
   // แผงล่าง
   await page.getByRole('button', { name: /Check/ }).click(); await page.waitForSelector('.log', { timeout: 15000 }); await page.waitForFunction(() => document.querySelector('.log').innerText.includes('—'), null, { timeout: 15000 });
   ok(/build-assets/.test(await page.locator('.log').innerText()), 'Check แสดงผลใน Output');

@@ -2,6 +2,9 @@
 // lib/project.js — แกนอ่าน/เขียน/ตรวจข้อมูลโปรเจกต์ Dummy Online (ไม่พึ่ง Electron ทดสอบด้วย node ล้วนได้)
 const fs = require('fs'), path = require('path');
 const PUB = 'client/public';
+// ข้อมูลเกมย้ายเข้าโฟลเดอร์ Assets/ แล้ว (ฝั่งเว็บและต้นฉบับรูป) — แก้ที่นี่ที่เดียวถ้าโครงสร้างเปลี่ยนอีก
+const ASSETS = PUB + '/Assets';
+const SRC = 'assets-src/Assets';
 const ITEM_DIRS = ['Theme', 'Table', 'Background', 'Card', 'Dock', 'CardBack', 'Frame'];
 const ITEM_KIND = { Theme: 'themes', Table: 'tables', Background: 'backgrounds', Card: 'cards', Dock: 'docks', CardBack: 'backs', Frame: 'frames' };
 const SETTINGS = [['Shop settings', 'Shop/Shopsetting.config'], ['Gacha settings', 'Shop/Gasha/gasha.config'], ['UI config', 'UI/ui.config'], ['Sounds config', 'Sounds/sounds.config']];
@@ -50,21 +53,21 @@ function writeText(root, rel, text) {
 // ---------- รายการ resource ----------
 const keyOf = r => r.file + (r.ptr ? '#' + r.ptr.join('.') : '');
 function loadResources(root) {
-  const pub = path.join(root, PUB), out = [];
-  for (const d of dirs(path.join(pub, 'Character'))) {
-    const rel = `${PUB}/Character/${d}/Character.config`, data = readJson(path.join(root, rel));
-    if (data) out.push({ group: 'Characters', kind: 'character', id: data.id || d, name: data.name || d, file: rel, ptr: null, dir: `${PUB}/Character/${d}`, assetDirs: [`assets-src/Character/${d}`, `${PUB}/Character/${d}`], folder: d, data });
+  const assets = path.join(root, ASSETS), out = [];
+  for (const d of dirs(path.join(assets, 'Character'))) {
+    const rel = `${ASSETS}/Character/${d}/Character.config`, data = readJson(path.join(root, rel));
+    if (data) out.push({ group: 'Characters', kind: 'character', id: data.id || d, name: data.name || d, file: rel, ptr: null, dir: `${ASSETS}/Character/${d}`, assetDirs: [`${SRC}/Character/${d}`, `${ASSETS}/Character/${d}`], folder: d, data });
   }
   for (const k of ITEM_DIRS) {
-    const rel = `${PUB}/Item/${k}/Item.config`, j = readJson(path.join(root, rel));
-    if (j && Array.isArray(j.items)) j.items.forEach((it, i) => out.push({ group: k, kind: 'item', itemKind: k, id: it.id, name: it.name || it.n || it.id, file: rel, ptr: ['items', i], dir: `${PUB}/Item/${k}`, data: it }));
+    const rel = `${ASSETS}/Item/${k}/Item.config`, j = readJson(path.join(root, rel));
+    if (j && Array.isArray(j.items)) j.items.forEach((it, i) => out.push({ group: k, kind: 'item', itemKind: k, id: it.id, name: it.name || it.n || it.id, file: rel, ptr: ['items', i], dir: `${ASSETS}/Item/${k}`, data: it }));
   }
-  for (const d of dirs(path.join(pub, 'Shop/Gasha'))) {
-    const rel = `${PUB}/Shop/Gasha/${d}/Config.config`, data = readJson(path.join(root, rel));
-    if (data) out.push({ group: 'Gacha banners', kind: 'banner', id: data.id || d, name: data.name || d, file: rel, ptr: null, dir: `${PUB}/Shop/Gasha/${d}`, folder: d, data });
+  for (const d of dirs(path.join(assets, 'Shop/Gasha'))) {
+    const rel = `${ASSETS}/Shop/Gasha/${d}/Config.config`, data = readJson(path.join(root, rel));
+    if (data) out.push({ group: 'Gacha banners', kind: 'banner', id: data.id || d, name: data.name || d, file: rel, ptr: null, dir: `${ASSETS}/Shop/Gasha/${d}`, folder: d, data });
   }
   for (const [name, f] of SETTINGS) {
-    const rel = `${PUB}/${f}`, data = readJson(path.join(root, rel));
+    const rel = `${ASSETS}/${f}`, data = readJson(path.join(root, rel));
     if (data) out.push({ group: 'Settings', kind: 'settings', id: f, name, file: rel, ptr: null, dir: posix(path.dirname(rel)), data });
   }
   out.forEach(r => { r.key = keyOf(r); if (!r.assetDirs) r.assetDirs = [r.dir]; });
@@ -91,23 +94,23 @@ function addServerId(root, name, id) {
 // ---------- สร้างใหม่ ----------
 const checkId = id => { if (!ID_RE.test(String(id || ''))) throw new Error('id ต้องเป็น a-z 0-9 และ - ยาว 2–31 ตัว (ขึ้นต้นด้วยตัวอักษร/ตัวเลข)'); return id; };
 function createCharacter(root, id, name) {
-  checkId(id); const dir = path.join(root, PUB, 'Character', id);
+  checkId(id); const dir = path.join(root, ASSETS, 'Character', id);
   if (exists(dir)) throw new Error('มีตัวละคร ' + id + ' แล้ว');
   const order = Math.max(0, ...loadResources(root).filter(r => r.kind === 'character').map(r => Number(r.data.order) || 0)) + 1;
   for (const s of ['Effect', 'Sounds', 'Background']) { fs.mkdirSync(path.join(dir, s), { recursive: true }); fs.writeFileSync(path.join(dir, s, '.gitkeep'), ''); }
-  writeJson(root, `${PUB}/Character/${id}/Character.config`, { id, name: name || id, price: 0, image: 'Character.webp', order, effects: {}, sounds: {}, background: '', lobby: { align: 'center', scale: 1 }, seat: '', table: { top: 0, show: 0.5, x: 0.45 }, star5: '' });
-  return { key: `${PUB}/Character/${id}/Character.config`, serverIdAdded: addServerId(root, 'CHARS', id) };
+  writeJson(root, `${ASSETS}/Character/${id}/Character.config`, { id, name: name || id, price: 0, image: 'Character.webp', order, effects: {}, sounds: {}, background: '', lobby: { align: 'center', scale: 1 }, seat: '', table: { top: 0, show: 0.5, x: 0.45 }, star5: '' });
+  return { key: `${ASSETS}/Character/${id}/Character.config`, serverIdAdded: addServerId(root, 'CHARS', id) };
 }
 function createBanner(root, id, name) {
-  checkId(id); const dir = path.join(root, PUB, 'Shop/Gasha', id);
+  checkId(id); const dir = path.join(root, ASSETS, 'Shop/Gasha', id);
   if (exists(dir)) throw new Error('มีตู้ ' + id + ' แล้ว');
   const order = Math.max(0, ...loadResources(root).filter(r => r.kind === 'banner').map(r => Number(r.data.order) || 0)) + 1;
-  writeJson(root, `${PUB}/Shop/Gasha/${id}/Config.config`, { id, name: name || id, description: '', order, enabled: false, image: 'banner.webp', pity: 90, rarityWeights: { legendary: 100, epic: 500, rare: 3400, common: 6000 }, rateUp: { multiplier: 1, items: [] }, group: 'char', kinds: ['characters'], ticket: 'ticket-b', ticketMcash: 30, ticketMcash10: 270 });
-  return { key: `${PUB}/Shop/Gasha/${id}/Config.config` };
+  writeJson(root, `${ASSETS}/Shop/Gasha/${id}/Config.config`, { id, name: name || id, description: '', order, enabled: false, image: 'banner.webp', pity: 90, rarityWeights: { legendary: 100, epic: 500, rare: 3400, common: 6000 }, rateUp: { multiplier: 1, items: [] }, group: 'char', kinds: ['characters'], ticket: 'ticket-b', ticketMcash: 30, ticketMcash10: 270 });
+  return { key: `${ASSETS}/Shop/Gasha/${id}/Config.config` };
 }
 function createItem(root, kind, id, name) {
   if (!ITEM_DIRS.includes(kind)) throw new Error('ชนิดไม่ถูกต้อง: ' + kind); checkId(id);
-  const rel = `${PUB}/Item/${kind}/Item.config`, j = readJson(path.join(root, rel), { kind: ITEM_KIND[kind], items: [] });
+  const rel = `${ASSETS}/Item/${kind}/Item.config`, j = readJson(path.join(root, rel), { kind: ITEM_KIND[kind], items: [] });
   if (j.items.some(x => x.id === id)) throw new Error('มี ' + id + ' แล้วใน ' + kind);
   j.items.push({ id, name: name || id, price: 0, order: Math.max(0, ...j.items.map(x => Number(x.order) || 0)) + 1 });
   writeJson(root, rel, j); if (kind === 'Background') addServerId(root, 'BGS', id);
@@ -146,7 +149,7 @@ function validate(root) {
     if (r.kind !== 'settings') { const k = r.group + ':' + r.id; if (seen[k]) add('error', r, 'id ซ้ำใน ' + r.group); seen[k] = 1; }
     if (r.kind === 'character') {
       if (d.id !== r.folder) add('error', r, `id "${d.id}" ไม่ตรงชื่อโฟลเดอร์ "${r.folder}"`);
-      if (!firstExisting(root, imageCandidates(r))) add('error', r, 'ไม่มีไฟล์รูปตัวละคร (' + (d.image || 'ไม่ได้ตั้ง') + ') ใน assets-src/Character/' + r.folder);
+      if (!firstExisting(root, imageCandidates(r))) add('error', r, 'ไม่มีไฟล์รูปตัวละคร (' + (d.image || 'ไม่ได้ตั้ง') + ') ใน ' + SRC + '/Character/' + r.folder);
       if (CH && !CH.includes(r.id)) add('error', r, 'id ไม่อยู่ใน CHARS ของเซิร์ฟเวอร์ (common.js) — ผู้เล่นอื่นจะไม่เห็นตัวละครนี้');
       if (skills.characters && !skills.characters[r.id]) add('warn', r, 'ยังไม่มีสกิลใน skills.json');
       if (d.star5 && !firstExisting(root, fileCandidates(r, d.star5))) add('warn', r, 'ไม่มีไฟล์ฉาก 5 ดาว ' + d.star5);
@@ -177,4 +180,4 @@ function openProject(root) {
   const pkg = readJson(path.join(root, 'server/package.json'), {});
   return { root, version: pkg.version || '', rootUrl: require('url').pathToFileURL(root + path.sep).href };
 }
-module.exports = { PUB, ITEM_DIRS, ID_RE, isProject, inside, listDir, readFile, writeText, loadResources, saveResource, createCharacter, createBanner, createItem, importImage, validate, imageCandidates, fileCandidates, openProject, serverIds };
+module.exports = { PUB, ASSETS, SRC, ITEM_DIRS, ID_RE, isProject, inside, listDir, readFile, writeText, loadResources, saveResource, createCharacter, createBanner, createItem, importImage, validate, imageCandidates, fileCandidates, openProject, serverIds };
