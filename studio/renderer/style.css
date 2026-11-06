@@ -67,3 +67,9 @@ button,input,select,textarea{font:inherit;color:inherit}
 ::-webkit-scrollbar{width:10px;height:10px}::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:5px;border:2px solid var(--bg1)}::-webkit-scrollbar-corner{background:none}
 
 .stage.col{flex-direction:column;gap:14px;justify-content:flex-start}.stage.col img{max-height:240px;flex:none}.stage.col .rates{flex:none}
+
+/* ปุ่มเกมจำลองตอนหน้าต่างเกมเปิดอยู่ — ให้รู้ว่ามีเซิร์ฟเวอร์เกมรันอยู่เบื้องหลัง */
+.rbtn.on {
+  border-color: var(--ok);
+  color: var(--ok);
+}

@@ -3,6 +3,7 @@
 // ใช้: node test/ui-smoke.js <โฟลเดอร์โปรเจกต์> [โฟลเดอร์เก็บภาพ]   (ต้องติดตั้ง playwright ไว้)
 const fs = require('fs'), os = require('os'), path = require('path');
 const P = require('../lib/project'), Runner = require('../lib/runner');
+const Preview = require('../lib/preview');
 const { chromium } = require(process.env.PLAYWRIGHT_PATH || 'playwright');
 const src = process.argv[2], shots = process.argv[3] || path.join(os.tmpdir(), 'studio-shots'); if (!src) { console.log('ระบุโฟลเดอร์โปรเจกต์'); process.exit(0); }
 fs.mkdirSync(shots, { recursive: true });
@@ -15,8 +16,23 @@ const png = path.join(tmp, 'pick.png'); fs.writeFileSync(png, fs.readFileSync(pa
   const handlers = {
     pick: () => tmp, open: p => P.openProject(p), resources: () => P.loadResources(tmp), validate: () => P.validate(tmp), listDir: r => P.listDir(tmp, r), readFile: r => P.readFile(tmp, r), writeText: (r, t) => P.writeText(tmp, r, t),
     save: (k, d) => P.saveResource(tmp, k, d), newCharacter: (i, n) => P.createCharacter(tmp, i, n), newBanner: (i, n) => P.createBanner(tmp, i, n), newItem: (k, i, n) => P.createItem(tmp, k, i, n), importImage: k => P.importImage(tmp, k, png),
+    // เกมจำลอง: ใช้ lib จริง แล้วแจ้งสถานะกลับหน้าต่างเหมือน main.js
+    preview: async () => {
+      const result = await Preview.startPreview(tmp, { onLog: text => emit('run:data', { text }) });
+      emit('preview:state', { open: true });
+      return result;
+    },
+    previewReload: () => true,
+    previewStop: () => {
+      Preview.stopPreview();
+      emit('preview:state', { open: false });
+      return true;
+    },
     run: kind => Runner.runTask(tmp, kind, (ev, d) => page.evaluate(([e, x]) => (window.__ev[e] || []).forEach(f => f(x)), [ev, d]).catch(() => {})), stop: () => Runner.stop(),
   };
+  function emit(eventName, data) {
+    page.evaluate(([e, x]) => (window.__ev[e] || []).forEach(f => f(x)), [eventName, data]).catch(() => {});
+  }
   await page.exposeFunction('__call', async (n, ...a) => { if (!handlers[n]) throw new Error('no ' + n); return handlers[n](...a); });
   await page.addInitScript(() => { window.__ev = {}; window.studio = { call: (n, ...a) => window.__call(n, ...a).catch(e => { throw new Error(String(e.message).replace(/^.*Error: /, '')); }), on: (e, cb) => { (window.__ev[e] = window.__ev[e] || []).push(cb); return () => {}; } }; });
   const ok = (c, m) => { if (!c) { console.log('✘', m); errors.push(m); } else console.log('✓', m); };
@@ -46,6 +62,30 @@ const png = path.join(tmp, 'pick.png'); fs.writeFileSync(png, fs.readFileSync(pa
   await page.getByRole('button', { name: /Problems/ }).click(); await page.screenshot({ path: shots + '/6-problems.png' });
   // เปิดไฟล์จาก FileSystem
   await page.locator('.tn', { hasText: 'server' }).first().click(); await page.waitForTimeout(300); ok(await page.locator('.left .tn').count() > 8, 'FileSystem ขยายโฟลเดอร์ได้');
+  await checkPreviewButton(page, ok);
+  Preview.stopPreview();
   await browser.close(); fs.rmSync(tmp, { recursive: true, force: true });
   console.log(errors.length ? '\n✘ พบข้อผิดพลาด ' + errors.length + ' รายการ:\n' + errors.join('\n') : '\nUI smoke test ผ่านทั้งหมด'); process.exit(errors.length ? 1 : 0);
 })().catch(e => { console.error('✘', e.message); process.exit(1); });
+
+// ปุ่ม 🎮 เกมจำลอง: เปิดได้ สถานะปุ่มเปลี่ยน และปิดได้จากเมนู Tools
+// (ต้องมี server/node_modules ในโปรเจกต์ต้นทาง — ถ้าไม่มี ข้ามแต่บอกไว้)
+async function checkPreviewButton(page, ok) {
+  const source = path.join(path.resolve(src), 'server', 'node_modules');
+  if (!fs.existsSync(source)) {
+    console.log('- ข้ามเทสเกมจำลอง: ยังไม่ได้ npm install ในโฟลเดอร์ server');
+    return;
+  }
+  fs.symlinkSync(source, path.join(tmp, 'server', 'node_modules'), 'junction');
+
+  await page.getByRole('button', { name: /เกมจำลอง/ }).click();
+  await page.waitForFunction(() => /เกมเปิดอยู่/.test(document.querySelector('#runbar').textContent), null, { timeout: 25000 });
+  ok(true, 'ปุ่มเกมจำลองเปิดเซิร์ฟเวอร์ได้ และปุ่มเปลี่ยนเป็น "เกมเปิดอยู่"');
+  ok(/พรีวิวพร้อม/.test(await page.locator('.log').textContent()), 'Output แสดงที่อยู่เกมจำลอง');
+  await page.screenshot({ path: shots + '/5-preview-on.png' });
+
+  await page.getByRole('button', { name: 'Tools' }).click();
+  await page.getByRole('button', { name: /ปิดเกมจำลอง/ }).click();
+  await page.waitForTimeout(300);
+  ok(/🎮 เกมจำลอง/.test(await page.locator('#runbar').textContent()) && !Preview.isRunning(), 'ปิดเกมจำลองจากเมนู Tools ได้');
+}

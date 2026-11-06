@@ -130,13 +130,45 @@ function wireRun() {
   api.on('run:done', d => { S.running = null; if (d.kind === 'test') S.testSum = d.summary; renderBottom(); renderRunbar(); renderStatus(); toast(d.summary || 'เสร็จสิ้น', /✘/.test(d.summary || '')); });
 }
 
+// ---------- เกมจำลอง (พรีวิว) ----------
+// เปิดหน้าเกมจริงในหน้าต่างแยกแบบออฟไลน์ (ไม่ต่อฐานข้อมูลจริง) · เกมอ่าน skins.json/gacha.json ที่ Build สร้าง
+// จึงต้องกด ▶ Build หลังแก้ข้อมูล แล้วหน้าต่างเกมจะรีโหลดเอง
+const PREVIEW_HINT = 'เปิดเกมจำลองแล้ว — แก้ข้อมูล ▸ บันทึก ▸ ▶ Build แล้วเกมจะรีโหลดเอง';
+
+const openPreview = guard(async size => {
+  if (!S.project) return;
+  S.bottom = 'output';
+  renderBottom();
+  toast('กำลังเปิดเกมจำลอง…');
+  await api.call('preview', size);
+  toast(PREVIEW_HINT);
+});
+const reloadPreview = guard(async () => {
+  await api.call('previewReload');
+});
+const closePreview = guard(async () => {
+  await api.call('previewStop');
+});
+function wirePreview() {
+  api.on('preview:state', state => {
+    S.previewOpen = state.open;
+    renderMenu();
+    renderRunbar();
+  });
+}
+
 // ---------- แถบเมนู ----------
 function menus() {
   const p = !!S.project, busy = !!S.running;
   return {
     'Project': [['เปิดโปรเจกต์…', 'Ctrl+O', pickProject, true], ['โหลดข้อมูลใหม่', 'Ctrl+R', guard(refresh), p], '-', ['บันทึก', 'Ctrl+S', save, p]],
     'Data': [['ตัวละครใหม่…', '', newChar, p], ['ตู้กาชาใหม่…', '', newBanner, p], ['ไอเทมใหม่…', '', newItem, p]],
-    'Tools': [['Build assets', 'F5', () => run('build'), p && !busy], ['Check assets', 'F6', () => run('check'), p && !busy], ['รันเทสต์เซิร์ฟเวอร์', 'F7', () => run('test'), p && !busy], '-', ['สร้าง SQL แคตตาล็อก', '', () => run('sql'), p && !busy], ['ติดตั้งแพ็กเกจเซิร์ฟเวอร์ (npm install)', '', () => run('install'), p && !busy]],
+    'Tools': [['Build assets', 'F5', () => run('build'), p && !busy], ['Check assets', 'F6', () => run('check'), p && !busy], ['รันเทสต์เซิร์ฟเวอร์', 'F7', () => run('test'), p && !busy], '-', ['สร้าง SQL แคตตาล็อก', '', () => run('sql'), p && !busy], ['ติดตั้งแพ็กเกจเซิร์ฟเวอร์ (npm install)', '', () => run('install'), p && !busy],
+      '-',
+      ['เกมจำลอง · มือถือแนวนอน', 'F8', () => openPreview('phone'), p],
+      ['เกมจำลอง · จอคอม', '', () => openPreview('desktop'), p],
+      ['รีโหลดเกมจำลอง', '', reloadPreview, p && !!S.previewOpen],
+      ['ปิดเกมจำลอง', '', closePreview, p && !!S.previewOpen]],
     'Help': [['เกี่ยวกับ Dummy Studio', '', () => modal('Dummy Studio 0.1', [{ key: 'x', label: 'เวอร์ชัน', value: 'ต้นแบบ — จัดการตัวละคร/ร้านค้า/กาชา' }]), true]],
   };
 }
@@ -158,7 +190,9 @@ function renderWork() {
 function renderRunbar() {
   const rb = $('#runbar'); if (!rb) return; const p = !!S.project, busy = !!S.running;
   put(rb, h('button', { class: 'rbtn', title: 'Build assets (F5)', disabled: !p || busy, onclick: () => run('build') }, '▶ Build'), h('button', { class: 'rbtn', title: 'Check (F6)', disabled: !p || busy, onclick: () => run('check') }, '✔ Check'),
-    h('button', { class: 'rbtn', title: 'Run tests (F7)', disabled: !p || busy, onclick: () => run('test') }, '🧪 Test'), busy ? h('button', { class: 'rbtn stop', onclick: stop }, '■ Stop') : null);
+    h('button', { class: 'rbtn', title: 'Run tests (F7)', disabled: !p || busy, onclick: () => run('test') }, '🧪 Test'),
+    h('button', { class: 'rbtn' + (S.previewOpen ? ' on' : ''), title: 'เกมจำลอง (F8)', disabled: !p, onclick: () => openPreview('phone') }, S.previewOpen ? '🎮 เกมเปิดอยู่' : '🎮 เกมจำลอง'),
+    busy ? h('button', { class: 'rbtn stop', onclick: stop }, '■ Stop') : null);
 }
 
 // ---------- FileSystem dock ----------
@@ -321,12 +355,13 @@ function build() {
   document.addEventListener('keydown', e => {
     if (e.ctrlKey && e.key.toLowerCase() === 's') { e.preventDefault(); save(); } else if (e.ctrlKey && e.key.toLowerCase() === 'o') { e.preventDefault(); pickProject(); } else if (e.ctrlKey && e.key.toLowerCase() === 'r') { e.preventDefault(); if (S.project) guard(refresh)(); }
     else if (e.key === 'F5') { e.preventDefault(); run('build'); } else if (e.key === 'F6') { e.preventDefault(); run('check'); } else if (e.key === 'F7') { e.preventDefault(); run('test'); }
+    else if (e.key === 'F8') { e.preventDefault(); openPreview('phone'); }
   });
   window.addEventListener('beforeunload', e => { if (anyDirty()) { e.preventDefault(); e.returnValue = ''; } });
 }
 async function start() {
   if (!api) { document.body.textContent = 'ต้องเปิดผ่าน Dummy Studio (Electron)'; return; }
-  build(); wireRun(); renderAll();
+  build(); wireRun(); wirePreview(); renderAll();
   try { const rec = JSON.parse(localStorage.getItem('recent') || '[]'); if (rec[0]) await openPath(rec[0]); } catch (e) { renderAll(); }
 }
 start();
