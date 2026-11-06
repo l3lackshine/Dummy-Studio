@@ -31,6 +31,8 @@
 - ไม่ได้แตะ: โค้ด Studio · repo เกม
 - วิธีย้อนกลับ: ลบ Release + tag บน GitHub (เจ้าของสั่งเท่านั้น) · `git revert` commit ของ workflow
 - ข้อควรระวัง: ไฟล์ .exe ยังไม่เซ็นชื่อดิจิทัล — Windows SmartScreen จะเตือน
+- ผล: Actions run 42310522767 ผ่าน → Release **v0.1.0** https://github.com/l3lackshine/Dummy-Studio/releases/tag/v0.1.0 มี `Dummy.Studio.Setup.0.1.0.exe` + `Dummy.Studio.0.1.0.exe` (GitHub เปลี่ยนช่องว่างในชื่อไฟล์เป็นจุด — แก้ชื่อใน RELEASE_NOTES.md ให้ตรงแล้ว แต่หน้า v0.1.0 ยังเขียนชื่อแบบมีช่องว่าง)
+- สถานะ: เสร็จ
 
 ### 2026-11-07 05:40 · Claude (claude-opus-5-5) · เกมจำลอง (แบบ ก. พรีวิว)
 - คำสั่งที่ได้รับ: "ทำแบบ ก แล้ว อัปพร้อมกัน เขียน worklog แยกเป็นของตัวเอง" — แบบ ก = เปิดหน้าเกมจริงใน Studio เพื่อดูผลการแก้ข้อมูล
