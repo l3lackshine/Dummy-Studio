@@ -4,9 +4,10 @@
 > Studio อยู่คนละ repo กับเกม — บันทึกงานของ Studio ที่นี่ ไม่ใช่ใน `docs/WORKLOG.md` ของเกม
 
 ## สถานะปัจจุบัน
-- งานที่กำลังทำ: ไม่มี · เวอร์ชันต้นแบบ 0.1 + ซ่อมพาธ Assets/ + เกมจำลอง (branch `ai/studio-fix-asset-paths`)
+- งานที่กำลังทำ: ไม่มี · ซ่อมพาธ Assets/ + เกมจำลอง **อยู่บน `main` แล้ว** (fast-forward `abd27ff..9667ea9` จาก branch `ai/studio-fix-asset-paths`) · GitHub Actions *Build Dummy Studio (Windows)* run 42309066961 ผ่าน: เทสแกนข้อมูลกับเกมจริงบน Windows + สร้าง `.exe` สำเร็จ (artifact `DummyStudio-win`)
 - งานค้างเรียงลำดับ:
-  1. เจ้าของลองบน Windows จริง: โหลดไฟล์ `.exe` จาก GitHub Actions ▸ *Build Dummy Studio (Windows)* ▸ เปิดโปรเจกต์ ▸ Tools ▸ ติดตั้งแพ็กเกจเซิร์ฟเวอร์ ▸ 🎮 เกมจำลอง
+  1. เจ้าของลองบน Windows จริง: GitHub ▸ Actions ▸ run ล่าสุดของ *Build Dummy Studio (Windows)* ▸ ดาวน์โหลด `DummyStudio-win` ▸ เปิดโปรเจกต์ ▸ Tools ▸ ติดตั้งแพ็กเกจเซิร์ฟเวอร์ ▸ 🎮 เกมจำลอง (ยังไม่มีใครลองเปิดบน Windows ด้วยมือ)
+  1.1 (เสนอ) workflow ยังรันแค่ `test-project.js` — เพิ่ม `test-preview.js` ต้อง `npm install` ในโฟลเดอร์เซิร์ฟเวอร์ของเกมก่อน
   2. (เสนอ ยังไม่ได้รับอนุมัติ) ไฟล์ `studio/.gitignore` กัน `node_modules/` · `package-lock.json` · `dist/`
   3. ต่อไปตามแผน: Blueprint เอฟเฟคบนโต๊ะ · Playground (บอทเล่นหลายพันตา) · ตัวแก้หน้าจอ/ปุ่ม (ต้องแตะไฟล์แกนของเกม)
 - คำถามที่รอเจ้าของตอบ: (ว่าง)
