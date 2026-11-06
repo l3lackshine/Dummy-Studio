@@ -2,10 +2,14 @@ name: Build Dummy Studio (Windows)
 on:
   workflow_dispatch:
   push:
+    branches: ['**']
+    tags: ['v*']            # ดัน tag เช่น v0.1.0 = build แล้วขึ้นเป็น Release ให้เอง (tag ไม่สนตัวกรอง paths)
     paths: ['studio/**']
 jobs:
   win:
     runs-on: windows-latest
+    permissions:
+      contents: write       # ต้องใช้สร้าง Release · ไม่ได้ให้สิทธิ์อื่นเพิ่ม
     defaults:
       run:
         working-directory: studio
@@ -32,3 +36,25 @@ jobs:
         with:
           name: DummyStudio-win
           path: studio/dist/*.exe
+
+      # ---------- ขึ้น Release (เฉพาะตอนดัน tag v*) ----------
+      # กันพลาด: เลข tag ต้องตรงกับ version ใน studio/package.json ไม่งั้นชื่อไฟล์ .exe กับหน้า Release จะไม่ตรงกัน
+      - name: ตรวจเลขเวอร์ชันตรงกับ tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        run: |
+          PKG_VERSION="v$(node -p "require('./package.json').version")"
+          if [ "$PKG_VERSION" != "$GITHUB_REF_NAME" ]; then
+            echo "tag $GITHUB_REF_NAME ไม่ตรงกับ package.json ($PKG_VERSION) — แก้ version แล้วดัน tag ใหม่"
+            exit 1
+          fi
+      - name: สร้าง Release พร้อมไฟล์ .exe
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" dist/*.exe \
+            --title "Dummy Studio $GITHUB_REF_NAME" \
+            --notes-file ../RELEASE_NOTES.md \
+            --generate-notes

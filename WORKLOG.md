@@ -20,6 +20,17 @@
 
 ## รายการงาน (ใหม่สุดบน)
 
+### 2026-11-07 06:20 · Claude (claude-opus-5-5) · ขึ้นไฟล์ .exe เป็น GitHub Release
+- คำสั่งที่ได้รับ: "เอาที่ build เสร็จ ขึ้นเป็น release หน้า repo ด้วยได้มั้ย"
+- ทำไมไม่เอาไฟล์จาก run เดิมขึ้นตรง ๆ: เครื่องที่ Claude ทำงานดาวน์โหลด artifact ของ Actions ไม่ได้ (ที่เก็บไฟล์ของ GitHub ถูกบล็อก) → ให้ Actions สร้าง Release เองแทน
+- branch: `ai/studio-release`
+- สร้างใหม่: `RELEASE_NOTES.md` (ข้อความหน้า Release · วิธีเลือกไฟล์/เปิดเมื่อ Windows เตือน)
+- แก้: `.github/workflows/studio-win.yml` — trigger เพิ่ม `tags: ['v*']` (+ `branches: ['**']` เพื่อให้ push branch ยัง build ตาม paths เหมือนเดิม) · `permissions: contents: write` · 2 ขั้นท้าย (ทำเฉพาะตอนดัน tag): ตรวจ tag = `v` + version ใน `studio/package.json` แล้ว `gh release create` แนบ `dist/*.exe`
+- วิธีออกเวอร์ชันใหม่: แก้ `version` ใน `studio/package.json` ▸ commit เข้า main ▸ `git tag v<version>` ▸ push tag
+- ไม่ได้แตะ: โค้ด Studio · repo เกม
+- วิธีย้อนกลับ: ลบ Release + tag บน GitHub (เจ้าของสั่งเท่านั้น) · `git revert` commit ของ workflow
+- ข้อควรระวัง: ไฟล์ .exe ยังไม่เซ็นชื่อดิจิทัล — Windows SmartScreen จะเตือน
+
 ### 2026-11-07 05:40 · Claude (claude-opus-5-5) · เกมจำลอง (แบบ ก. พรีวิว)
 - คำสั่งที่ได้รับ: "ทำแบบ ก แล้ว อัปพร้อมกัน เขียน worklog แยกเป็นของตัวเอง" — แบบ ก = เปิดหน้าเกมจริงใน Studio เพื่อดูผลการแก้ข้อมูล
 - branch: `ai/studio-fix-asset-paths` · commit `36969c4`
