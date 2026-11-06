@@ -2,9 +2,7 @@ name: Build Dummy Studio (Windows)
 on:
   workflow_dispatch:
   push:
-    branches: ['**']
-    tags: ['v*']            # ดัน tag เช่น v0.1.0 = build แล้วขึ้นเป็น Release ให้เอง (tag ไม่สนตัวกรอง paths)
-    paths: ['studio/**']
+    paths: ['studio/**', '.github/workflows/studio-win.yml']   # แก้ workflow นี้ก็ build ใหม่ด้วย
 jobs:
   win:
     runs-on: windows-latest
@@ -37,24 +35,23 @@ jobs:
           name: DummyStudio-win
           path: studio/dist/*.exe
 
-      # ---------- ขึ้น Release (เฉพาะตอนดัน tag v*) ----------
-      # กันพลาด: เลข tag ต้องตรงกับ version ใน studio/package.json ไม่งั้นชื่อไฟล์ .exe กับหน้า Release จะไม่ตรงกัน
-      - name: ตรวจเลขเวอร์ชันตรงกับ tag
-        if: startsWith(github.ref, 'refs/tags/v')
-        shell: bash
-        run: |
-          PKG_VERSION="v$(node -p "require('./package.json').version")"
-          if [ "$PKG_VERSION" != "$GITHUB_REF_NAME" ]; then
-            echo "tag $GITHUB_REF_NAME ไม่ตรงกับ package.json ($PKG_VERSION) — แก้ version แล้วดัน tag ใหม่"
-            exit 1
-          fi
-      - name: สร้าง Release พร้อมไฟล์ .exe
-        if: startsWith(github.ref, 'refs/tags/v')
+      # ---------- ขึ้น Release (เฉพาะ main) ----------
+      # เลขเวอร์ชันมาจาก studio/package.json: ยังไม่มี Release ของเลขนี้ = สร้างใหม่ (สร้าง tag v<เลข> ให้เอง)
+      # มีแล้ว = ข้าม · ออกเวอร์ชันใหม่ = แก้ version ใน package.json แล้ว push เข้า main
+      # (ไม่ใช้การดัน tag เพราะเครื่องมือที่ Claude ใช้ดัน tag ขึ้น GitHub ไม่ได้)
+      - name: ขึ้น Release ถ้าเวอร์ชันนี้ยังไม่มี
+        if: github.ref == 'refs/heads/main'
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "$GITHUB_REF_NAME" dist/*.exe \
-            --title "Dummy Studio $GITHUB_REF_NAME" \
+          TAG="v$(node -p "require('./package.json').version")"
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            echo "มี Release $TAG แล้ว — ข้าม (ออกใหม่ต้องเปลี่ยน version ใน studio/package.json)"
+            exit 0
+          fi
+          gh release create "$TAG" dist/*.exe \
+            --target "$GITHUB_SHA" \
+            --title "Dummy Studio $TAG" \
             --notes-file ../RELEASE_NOTES.md \
             --generate-notes
